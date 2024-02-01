@@ -10,13 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "desktop-screenshot": "^0.1.1",
-    "ffi-napi": "^4.0.3",
     "jimp": "^0.22.10",
-    "pngjs": "^7.0.0",
-    "ref-napi": "^3.0.3",
     "robotjs": "^0.6.0",
-    "sharp": "^0.33.2",
     "tesseract.js": "^5.0.4"
   }
 }
