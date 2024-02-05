@@ -1,19 +1,22 @@
 const robot = require('robotjs');
-require('./node_modules/robotjs/build/Release/robotjs.node');
 const fs = require('fs');
-
+require('./node_modules/robotjs/build/Release/robotjs.node');
 const jimp = require('jimp');
 const Tesseract = require('tesseract.js');
-const { windowPosition, id, width, height } = require('./quant');
-console.log(windowPosition);
-console.log(width);
-console.log(height);
+const {  windowPosition,
+  id,
+  width,
+  height} = require('./quant')
+  console.log(windowPosition)
+  console.log(width)
+  console.log(height)
+
 
 async function performOCRAndFindWords() {
   return new Promise((resolve, reject) => {
     const screen = robot.screen.capture(
       windowPosition.x,
-      windowPosition.y - 50,
+      windowPosition.y-50,
       width,
       height
     );
@@ -70,7 +73,7 @@ async function performOCRAndFindLines() {
   return new Promise((resolve, reject) => {
     const screen = robot.screen.capture(
       windowPosition.x,
-      windowPosition.y - 50,
+      windowPosition.y-50,
       width,
       height
     );
@@ -114,94 +117,87 @@ async function performOCRAndFindLines() {
   });
 }
 
-async function findAndClick(name) {
+
+
+async function findAndClick (name) {
   const targetWord = name; // Текст, который мы ищем
 
   const wordsWithCoordinates = await performOCRAndFindWords();
   console.log('Слова с координатами:', wordsWithCoordinates);
-  const foundObject = wordsWithCoordinates.find(obj => obj.text === targetWord);
+  const foundObject = wordsWithCoordinates.find(
+    obj => obj.text === targetWord
+  );
 
   if (foundObject) {
     console.log('Найден объект:', foundObject);
     const { left, top } = foundObject.coordinates;
-    await new Promise(resolve => {
-      robot.moveMouse(windowPosition.x + left, windowPosition.y - 50 + top);
+    await new Promise((resolve) => {
+      robot.moveMouse(windowPosition.x + left, windowPosition.y-50 + top);
       robot.mouseClick('left');
       setTimeout(() => {
         resolve();
       }, 1000);
     });
-  }
+    
+   
+    
+  } 
 }
 
-async function runBot() {
-  await findAndClick('Bot');
-  await findAndClick('Download');
-  await new Promise(resolve => {
-    setTimeout(async () => {
-      await findAndClick('Bot');
-      await findAndClick('Run');
-      resolve();
-    }, 15000);
-  });
+async function runBot () {
+  await findAndClick("Bot")
+  await findAndClick("Download")
+ await   new Promise((resolve) => {
+  setTimeout(async ()=>{
+    
+    await findAndClick("Bot")
+    await findAndClick("Run")
+    resolve()
+  }, 15000)
+ })
+ 
+
+
 }
 
-// (async () => {
-//   // const handle = getWindowHandleByTitle(targetWindowTitle);
-//   // console.log(handle);
 
-//   // if (handle !== 0) {
-//     // const rect = getWindowRect(handle);
-//     /
 
-//     // if (textCoordinates) {
-//     //   console.log(
-//     //     `Найден текст "${targetText}" в координатах:`,
-//     //     textCoordinates
-//     //   );
-//     //   // Твой код для дальнейших действий
-//     // } else {
-//     //   console.log(`Текст "${targetText}" не найден в заданной области.`);
-//     // }
-//     // Предположим, что координаты кнопки "File" внутри окна равны (x, y)
-//     // const fileButtonX = rect.left + 50; // Замени на фактические значения
-//     // const fileButtonY = rect.top + 50; // Замени на фактические значения
-
-//     // // Вызови функцию для клика по кнопке "File"
-//     // clickAt(fileButtonX, fileButtonY);
-//   // } else {
-//   //   console.error('Window not found');
-//   // }
-// })();
-
-const intrId = setInterval(async () => {
+const intrId = setInterval(async ()=>{
   const foundLines = await performOCRAndFindLines();
   const targetLine = 'The project was successfully uploaded';
   const targetLine2 = 'Failed to download the project';
-  const targetLine3 = 'There is no project here';
-  //
-  //
+  const targetLine3 = 'Projects directory is empty';
+  // 
+  // 
   console.log('найденые строки:', foundLines);
 
-  if (foundLines.length < 4) return;
-  const noProject = false;
+   if (foundLines.length <4) return
+   const noProject = false
 
-  const successfull =
-    foundLines[foundLines.length - 1].text.includes(targetLine) ||
-    foundLines[foundLines.length - 2].text.includes(targetLine) ||
-    foundLines[foundLines.length - 3].text.includes(targetLine) ||
-    foundLines[foundLines.length - 4].text.includes(targetLine);
-  const failedDownload =
-    foundLines[foundLines.length - 1].text.includes(targetLine2) ||
-    foundLines[foundLines.length - 2].text.includes(targetLine2) ||
-    foundLines[foundLines.length - 3].text.includes(targetLine2) ||
-    foundLines[foundLines.length - 4].text.includes(targetLine2);
+  const successfull =     foundLines[foundLines.length-1].text.includes(targetLine) || 
+  foundLines[foundLines.length-2].text.includes(targetLine) || 
+  foundLines[foundLines.length-3].text.includes(targetLine) || 
+  foundLines[foundLines.length-4].text.includes(targetLine) 
+  const failedDownload =     foundLines[foundLines.length-1].text.includes(targetLine2) || 
+  foundLines[foundLines.length-2].text.includes(targetLine2) || 
+  foundLines[foundLines.length-3].text.includes(targetLine2) || 
+  foundLines[foundLines.length-4].text.includes(targetLine2) 
+
+  const directoryEmpty =     foundLines[foundLines.length-1].text.includes(targetLine3) || 
+  foundLines[foundLines.length-2].text.includes(targetLine3) || 
+  foundLines[foundLines.length-3].text.includes(targetLine3) || 
+  foundLines[foundLines.length-4].text.includes(targetLine3) 
+
+
 
   if (noProject) {
-    clearInterval(intrId);
-    return;
+    clearInterval(intrId)
+    return
   }
-  if (successfull || failedDownload) {
-    await runBot();
+  if (successfull || failedDownload || directoryEmpty) {
+    await runBot()
+   
+   
+    
   }
-}, 60000);
+},60000)
