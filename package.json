@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm run pkg && npm run copy-folders",
+    "pkg": "pkg ./index.js -c ./pkgConfig.json",
+    "copy-folders": "cp -r ./eng.traineddata ./dist/build"
   },
   "keywords": [],
   "author": "",

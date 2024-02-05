@@ -1,0 +1,14 @@
+{
+  "pkg": {
+    "assets": [
+      "node_modules/jimp/**/*",
+      "node_modules/robotjs/**/*",
+      "/node_modules/robotjs/build/Release/**/*",
+      "node_modules/tesseract.js/**/*",
+      "node_modules/tesseract.js-core/**/*",
+      "node_modules/x11/**/*",
+      "./quant.js"
+    ],
+    "outputPath": "dist/build"
+  }
+}

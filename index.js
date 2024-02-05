@@ -1,4 +1,5 @@
 const robot = require('robotjs');
+require('./node_modules/robotjs/build/Release/robotjs.node');
 const fs = require('fs');
 
 const jimp = require('jimp');
