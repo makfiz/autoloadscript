@@ -1,69 +1,18 @@
 const robot = require('robotjs');
 const fs = require('fs');
-// const ffi = require('ffi-napi');
+
 const jimp = require('jimp');
 const Tesseract = require('tesseract.js');
-const {  windowPosition,
-  id,
-  width,
-  height} = require('./quant')
-  console.log(windowPosition)
-  console.log(width)
-  console.log(height)
-// const windowPosition = {x:79, y:147}
-// const width = 10
-// const height = 10
-
-  
-// const { execSync } = require('child_process');
-// const screenSize = robot.getScreenSize();
-// console.log(screenSize);
-// const worker = await createWorker('eng');
-// const targetWindowTitle = 'Quant';
-
-// const user32 = new ffi.Library('user32', {
-//   FindWindowA: ['int', ['string', 'string']],
-//   GetWindowRect: ['bool', ['int', 'pointer']],
-//   GetWindowTextA: ['int', ['int', 'string', 'int']],
-// });
-
-// Function to get the handle of the window by title
-// function getWindowHandleByTitle(title) {
-//   return user32.FindWindowA(null, title);
-// }
-// function getWindowIdByTitle(title) {
-//   const command = `xdotool search --name "${title}"`;
-//   const result = execSync(command, { encoding: 'utf-8' });
-//   const windowId = result.trim();
-//   return windowId;
-// }
-
-// Пример использования
-
-
-// Function to get the window rectangle (position and size)
-// function getWindowRect(handle) {
-//   const rectBuffer = Buffer.alloc(16); // 4 int'а по 4 байта
-//   user32.GetWindowRect(handle, rectBuffer);
-
-//   const rect = [];
-//   for (let i = 0; i < 4; i++) {
-//     rect.push(rectBuffer.readInt32LE(i * 4));
-//   }
-
-//   return {
-//     left: rect[0],
-//     top: rect[1],
-//     right: rect[2],
-//     bottom: rect[3],
-//   };
-// }
+const { windowPosition, id, width, height } = require('./quant');
+console.log(windowPosition);
+console.log(width);
+console.log(height);
 
 async function performOCRAndFindWords() {
   return new Promise((resolve, reject) => {
     const screen = robot.screen.capture(
       windowPosition.x,
-      windowPosition.y-50,
+      windowPosition.y - 50,
       width,
       height
     );
@@ -120,7 +69,7 @@ async function performOCRAndFindLines() {
   return new Promise((resolve, reject) => {
     const screen = robot.screen.capture(
       windowPosition.x,
-      windowPosition.y-50,
+      windowPosition.y - 50,
       width,
       height
     );
@@ -164,134 +113,36 @@ async function performOCRAndFindLines() {
   });
 }
 
-// async function performOCRAndFindText(rect, targetText) {
-//   return new Promise((resolve, reject) => {
-//     const image = robot.screen.capture(
-//       rect.left,
-//       rect.top,
-//       rect.right - rect.left,
-//       rect.bottom - rect.top
-//     );
-
-//     Tesseract.recognize(image.bitmap, 'eng', {
-//       logger: info => {
-//         if (info.progress === 100) {
-//           const foundText = info.data.text;
-//           const textIndex = foundText.indexOf(targetText);
-
-//           if (textIndex !== -1) {
-//             const charWidth = image.width / foundText.length;
-//             const charHeight = image.height;
-
-//             const startX = rect.left + textIndex * charWidth;
-//             const startY = rect.top;
-//             const endX = startX + targetText.length * charWidth;
-//             const endY = rect.bottom;
-
-//             const textCoordinates = {
-//               startX: Math.round(startX),
-//               startY: Math.round(startY),
-//               endX: Math.round(endX),
-//               endY: Math.round(endY),
-//             };
-
-//             resolve(textCoordinates);
-//           } else {
-//             resolve(null); // Текст не найден
-//           }
-//         }
-//       },
-//     });
-//   });
-// }
-// async function findAndClickBot () {
-//   const targetWord = 'Bot'; // Текст, который мы ищем
-
-//   const wordsWithCoordinates = await performOCRAndFindWords();
-//   console.log('Слова с координатами:', wordsWithCoordinates);
-//   const foundObject = wordsWithCoordinates.find(
-//     obj => obj.text === targetWord
-//   );
-
-//   if (foundObject) {
-//     console.log('Найден объект:', foundObject);
-//     const { left, top } = foundObject.coordinates;
-//     await new Promise((resolve) => {
-//       robot.moveMouse(windowPosition.x + left, windowPosition.y-50 + top);
-//       robot.mouseClick('left');
-//       setTimeout(() => {
-//         resolve();
-//       }, 1000);
-//     });
-    
-   
-    
-//   } 
-// }
-// async function findAndClickDownload () {
-//   const targetWord = 'Download'; // Текст, который мы ищем
-
-//   const wordsWithCoordinates = await performOCRAndFindWords();
-//   console.log('Слова с координатами:', wordsWithCoordinates);
-//   const foundObject = wordsWithCoordinates.find(
-//     obj => obj.text === targetWord
-//   );
-
-//   if (foundObject) {
-//     console.log('Найден объект:', foundObject);
-//     const { left, top } = foundObject.coordinates;
-//     await new Promise((resolve) => {
-//       robot.moveMouse(windowPosition.x + left, windowPosition.y-50 + top);
-//       robot.mouseClick('left');
-//       setTimeout(() => {
-//         resolve();
-//       }, 1000);
-//     });
-    
-   
-    
-//   } 
-// }
-
-async function findAndClick (name) {
+async function findAndClick(name) {
   const targetWord = name; // Текст, который мы ищем
 
   const wordsWithCoordinates = await performOCRAndFindWords();
   console.log('Слова с координатами:', wordsWithCoordinates);
-  const foundObject = wordsWithCoordinates.find(
-    obj => obj.text === targetWord
-  );
+  const foundObject = wordsWithCoordinates.find(obj => obj.text === targetWord);
 
   if (foundObject) {
     console.log('Найден объект:', foundObject);
     const { left, top } = foundObject.coordinates;
-    await new Promise((resolve) => {
-      robot.moveMouse(windowPosition.x + left, windowPosition.y-50 + top);
+    await new Promise(resolve => {
+      robot.moveMouse(windowPosition.x + left, windowPosition.y - 50 + top);
       robot.mouseClick('left');
       setTimeout(() => {
         resolve();
       }, 1000);
     });
-    
-   
-    
-  } 
+  }
 }
 
-async function runBot () {
-  await findAndClick("Bot")
-  await findAndClick("Download")
- await   new Promise((resolve) => {
-  setTimeout(async ()=>{
-    
-    await findAndClick("Bot")
-    await findAndClick("Run")
-    resolve()
-  }, 15000)
- })
- 
-
-
+async function runBot() {
+  await findAndClick('Bot');
+  await findAndClick('Download');
+  await new Promise(resolve => {
+    setTimeout(async () => {
+      await findAndClick('Bot');
+      await findAndClick('Run');
+      resolve();
+    }, 15000);
+  });
 }
 
 // (async () => {
@@ -301,7 +152,6 @@ async function runBot () {
 //   // if (handle !== 0) {
 //     // const rect = getWindowRect(handle);
 //     /
-   
 
 //     // if (textCoordinates) {
 //     //   console.log(
@@ -323,38 +173,34 @@ async function runBot () {
 //   // }
 // })();
 
-const intrId = setInterval(async ()=>{
+const intrId = setInterval(async () => {
   const foundLines = await performOCRAndFindLines();
   const targetLine = 'The project was successfully uploaded';
   const targetLine2 = 'Failed to download the project';
   const targetLine3 = 'There is no project here';
-  // 
-  // 
+  //
+  //
   console.log('найденые строки:', foundLines);
 
-   if (foundLines.length <4) return
-   const noProject = false
+  if (foundLines.length < 4) return;
+  const noProject = false;
 
-  const successfull =     foundLines[foundLines.length-1].text.includes(targetLine) || 
-  foundLines[foundLines.length-2].text.includes(targetLine) || 
-  foundLines[foundLines.length-3].text.includes(targetLine) || 
-  foundLines[foundLines.length-4].text.includes(targetLine) 
-  const failedDownload =     foundLines[foundLines.length-1].text.includes(targetLine2) || 
-  foundLines[foundLines.length-2].text.includes(targetLine2) || 
-  foundLines[foundLines.length-3].text.includes(targetLine2) || 
-  foundLines[foundLines.length-4].text.includes(targetLine2) 
-
-
-
+  const successfull =
+    foundLines[foundLines.length - 1].text.includes(targetLine) ||
+    foundLines[foundLines.length - 2].text.includes(targetLine) ||
+    foundLines[foundLines.length - 3].text.includes(targetLine) ||
+    foundLines[foundLines.length - 4].text.includes(targetLine);
+  const failedDownload =
+    foundLines[foundLines.length - 1].text.includes(targetLine2) ||
+    foundLines[foundLines.length - 2].text.includes(targetLine2) ||
+    foundLines[foundLines.length - 3].text.includes(targetLine2) ||
+    foundLines[foundLines.length - 4].text.includes(targetLine2);
 
   if (noProject) {
-    clearInterval(intrId)
-    return
+    clearInterval(intrId);
+    return;
   }
   if (successfull || failedDownload) {
-    await runBot()
-   
-   
-    
+    await runBot();
   }
-},60000)
+}, 60000);
