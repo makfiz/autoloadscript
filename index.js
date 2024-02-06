@@ -167,12 +167,17 @@ const intrId = setInterval(async ()=>{
   const targetLine = 'The project was successfully uploaded';
   const targetLine2 = 'Failed to download the project';
   const targetLine3 = 'Projects directory is empty';
+  const targetLine4 = "There are no available projects"
+  
   // 
   // 
   console.log('найденые строки:', foundLines);
 
    if (foundLines.length <4) return
-   const noProject = false
+   const noProject = foundLines[foundLines.length-1].text.includes(targetLine4) || 
+   foundLines[foundLines.length-2].text.includes(targetLine4) || 
+   foundLines[foundLines.length-3].text.includes(targetLine4) || 
+   foundLines[foundLines.length-4].text.includes(targetLine4)
 
   const successfull =     foundLines[foundLines.length-1].text.includes(targetLine) || 
   foundLines[foundLines.length-2].text.includes(targetLine) || 
