@@ -119,10 +119,19 @@ async function performOCRAndFindLines() {
 
 
 
-async function findAndClick (name) {
+async function findAndClick (name, position = undefined) {
   const targetWord = name; // Текст, который мы ищем
-
-  const wordsWithCoordinates = await performOCRAndFindWords();
+  if (position) {
+    const [x , y] = position
+    await new Promise((resolve) => {
+      robot.moveMouse(x, y);
+      robot.mouseClick('left');
+      setTimeout(() => {
+        resolve([x, y]);
+      }, 1000);
+    });
+  } else {
+    const wordsWithCoordinates = await performOCRAndFindWords();
   console.log('Слова с координатами:', wordsWithCoordinates);
   const foundObject = wordsWithCoordinates.find(
     obj => obj.text === targetWord
@@ -135,23 +144,48 @@ async function findAndClick (name) {
       robot.moveMouse(windowPosition.x + left, windowPosition.y-50 + top);
       robot.mouseClick('left');
       setTimeout(() => {
-        resolve();
+        resolve([windowPosition.x + left, windowPosition.y-50 + top]);
       }, 1000);
     });
     
    
     
   } 
+  }
+  
 }
 
-async function runBot () {
-  await findAndClick("Bot")
-  await findAndClick("Download")
+let botPosition 
+let downloadPosition
+let runPosition
+
+
+async function firstRun () {
+  botPosition = await findAndClick("Bot")
+  downloadPosition = await findAndClick("Download")
  await   new Promise((resolve) => {
   setTimeout(async ()=>{
     
     await findAndClick("Bot")
-    await findAndClick("Run")
+    runPosition = await findAndClick("Run")
+    resolve()
+  }, 15000)
+ })
+ 
+
+
+}
+
+firstRun()
+
+async function runBot () {
+  botPosition = await findAndClick("Bot", botPosition)
+  downloadPosition = await findAndClick("Download", downloadPosition)
+ await   new Promise((resolve) => {
+  setTimeout(async ()=>{
+    
+    await findAndClick("Bot", botPosition)
+    runPosition = await findAndClick("Run", runPosition)
     resolve()
   }, 15000)
  })
