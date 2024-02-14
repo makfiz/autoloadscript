@@ -12,9 +12,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cron": "^3.1.6",
     "jimp": "^0.22.10",
     "robotjs": "^0.6.0",
     "tesseract.js": "^5.0.4",
     "x11": "^2.3.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
   }
 }

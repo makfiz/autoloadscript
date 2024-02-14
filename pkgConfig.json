@@ -1,6 +1,7 @@
 {
   "pkg": {
     "assets": [
+      "node_modules/cron/**/*",
       "node_modules/jimp/**/*",
       "node_modules/robotjs/**/*",
       "/node_modules/robotjs/build/Release/**/*",

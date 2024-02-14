@@ -1,3 +1,4 @@
+const { CronJob } = require('cron');
 const robot = require('robotjs');
 const fs = require('fs');
 require('./node_modules/robotjs/build/Release/robotjs.node');
@@ -7,9 +8,8 @@ const {  windowPosition,
   id,
   width,
   height} = require('./quant')
-  console.log(windowPosition)
-  console.log(width)
-  console.log(height)
+  
+let watchingNow = false
 
 
 async function performOCRAndFindWords() {
@@ -176,7 +176,8 @@ async function firstRun () {
 
 }
 
-firstRun()
+setTimeout(firstRun,10000)
+
 
 async function runBot () {
   botPosition = await findAndClick("Bot", botPosition)
@@ -194,13 +195,23 @@ async function runBot () {
 
 }
 
+startObservation()
+function startObservation () {
+  watchingNow = true
+  const intrId = setInterval(()=>{
+    handleQuantStatus(intrId)
+  },60000)
+  
+  
+ 
+}
 
+async function handleQuantStatus (id) {
 
-const intrId = setInterval(async ()=>{
   const foundLines = await performOCRAndFindLines();
   const targetLine = 'The project was successfully uploaded';
   const targetLine2 = 'Failed to download the project';
-  const targetLine3 = 'Projects directory is empty';
+  const targetLine3 = 'There is no project here';
   const targetLine4 = "There are no available projects"
   
   // 
@@ -208,10 +219,6 @@ const intrId = setInterval(async ()=>{
   console.log('найденые строки:', foundLines);
 
    if (foundLines.length <4) return
-   const noProject = foundLines[foundLines.length-1].text.includes(targetLine4) || 
-   foundLines[foundLines.length-2].text.includes(targetLine4) || 
-   foundLines[foundLines.length-3].text.includes(targetLine4) || 
-   foundLines[foundLines.length-4].text.includes(targetLine4)
 
   const successfull =     foundLines[foundLines.length-1].text.includes(targetLine) || 
   foundLines[foundLines.length-2].text.includes(targetLine) || 
@@ -229,14 +236,61 @@ const intrId = setInterval(async ()=>{
 
 
 
-  if (noProject) {
-    clearInterval(intrId)
-    return
-  }
-  if (successfull || failedDownload || directoryEmpty) {
-    await runBot()
-   
-   
+
+
+  if (directoryEmpty) {
+    const noProject = foundLines[foundLines.length-1].text.includes(targetLine4) || 
+    foundLines[foundLines.length-2].text.includes(targetLine4) || 
+    foundLines[foundLines.length-3].text.includes(targetLine4) || 
+    foundLines[foundLines.length-4].text.includes(targetLine4) ||
+    foundLines[foundLines.length-5].text.includes(targetLine4) ||
+    foundLines[foundLines.length-6].text.includes(targetLine4) ||
+    foundLines[foundLines.length-7].text.includes(targetLine4) ||
+    foundLines[foundLines.length-8].text.includes(targetLine4) 
+
+    if (noProject) {
+      console.log("no projects stop wwatching")
+      clearInterval(id)
+      watchingNow = false
+    } else {
+      await runBot()
+      return
+    }
+
     
   }
-},60000)
+
+ 
+
+  if (successfull || failedDownload ) {
+    await runBot()
+  }
+}
+
+
+
+
+const taskMorning = new CronJob('15 7 * * 1-5', async () => {
+  if (!watchingNow) {
+    watchingNow = true
+    await firstRun()
+    startObservation()
+  } else {
+    return
+  }
+
+}, null, true, 'Europe/Kiev'); 
+
+const taskEvening = new CronJob('30 21 * * 1-5', async () => {
+  if (!watchingNow) {
+    watchingNow = true
+    await firstRun()
+    startObservation()
+  } else {
+    return
+  }
+}, null, true, 'Europe/Kiev'); 
+
+
+taskMorning.start();
+taskEvening.start();
