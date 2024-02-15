@@ -265,6 +265,7 @@ async function handleQuantStatus (id) {
       console.log("no projects stop observation")
       clearInterval(id)
       watchingNow = false
+      return
     } else {
       console.log("line 'There are no available projects' not found, run Bot")
       await runBot()
