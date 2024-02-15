@@ -1,5 +1,6 @@
 const { execSync } = require('child_process');
 const { CronJob } = require('cron');
+const stringSimilarity = require('string-similarity');
 const robot = require('robotjs');
 const fs = require('fs');
 require('./node_modules/robotjs/build/Release/robotjs.node');
@@ -142,7 +143,7 @@ async function findAndClick (name, position = undefined) {
      
       setTimeout(() => {
         resolve([x, y]);
-      }, 1000);
+      }, 1500);
     });
   } else {
     const wordsWithCoordinates = await performOCRAndFindWords();
@@ -159,7 +160,7 @@ async function findAndClick (name, position = undefined) {
       mouseClick();
       setTimeout(() => {
         resolve([windowPosition.x + left, windowPosition.y-50 + top]);
-      }, 1000);
+      }, 1500);
     });
     
    
@@ -221,46 +222,102 @@ function startObservation () {
  
 }
 
+// async function handleQuantStatus (id) {
+
+//   const lines = await performOCRAndFindLines();
+//   const foundLines = lines.filter(obj => obj.text.length >= 10);
+//   const targetLine = 'the project was successfully uploaded';
+//   const targetLine2 = 'failed to download the project';
+//   const targetLine3 = 'there is no project here';
+//   const targetLine4 = "there are no available projects"
+  
+//   // 
+//   // 
+//   console.log('found strings:', foundLines);
+
+//    if (foundLines.length <4) return
+
+//   const successfull =     foundLines[foundLines.length-1].text.toLowerCase().includes(targetLine) || 
+//   foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine) || 
+//   foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine) || 
+//   foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine) 
+//   const failedDownload =     foundLines[foundLines.length-1].text.includes(targetLine2) || 
+//   foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine2) || 
+//   foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine2) || 
+//   foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine2) 
+
+//   const directoryEmpty =     foundLines[foundLines.length-1].text.includes(targetLine3) || 
+//   foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine3) || 
+//   foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine3) || 
+//   foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine3) 
+
+
+
+
+
+//   if (directoryEmpty) {
+//     console.log(`directoryEmpty ${directoryEmpty}`)
+//     const noProject = foundLines[foundLines.length-1].text.toLowerCase().includes(targetLine4) || 
+//     foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine4) || 
+//     foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine4) || 
+//     foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine4) 
+
+//     if (noProject) {
+//       console.log("no projects stop observation")
+//       clearInterval(id)
+//       watchingNow = false
+//       return
+//     } else {
+//       console.log("line 'There are no available projects' not found, run Bot")
+//       await runBot()
+//       return
+//     }
+
+    
+//   }
+
+ 
+
+//   if (successfull || failedDownload ) {
+//     await runBot()
+//   }
+// }
+
 async function handleQuantStatus (id) {
 
   const lines = await performOCRAndFindLines();
   const foundLines = lines.filter(obj => obj.text.length >= 10);
-  const targetLine = 'The project was successfully uploaded';
-  const targetLine2 = 'Failed to download the project';
-  const targetLine3 = 'There is no project here';
-  const targetLine4 = "There are no available projects"
+  if (foundLines.length <4) return
+  const targetLines = foundLines.slice(-5);
+  
+  const targetLine = 'the project was successfully uploaded';
+  const targetLine2 = 'failed to download the project';
+  const targetLine3 = 'there is no project here';
+  const targetLine4 = "there are no available projects"
   
   // 
   // 
   console.log('found strings:', foundLines);
 
-   if (foundLines.length <4) return
+  const isSimilar = (line, target) => {
+    const similarity = stringSimilarity.compareTwoStrings(line.toLowerCase(), target.toLowerCase());
+    return similarity >= 0.75; // Порог сходства 80%
+};
 
-  const successfull =     foundLines[foundLines.length-1].text.includes(targetLine) || 
-  foundLines[foundLines.length-2].text.includes(targetLine) || 
-  foundLines[foundLines.length-3].text.includes(targetLine) || 
-  foundLines[foundLines.length-4].text.includes(targetLine) 
-  const failedDownload =     foundLines[foundLines.length-1].text.includes(targetLine2) || 
-  foundLines[foundLines.length-2].text.includes(targetLine2) || 
-  foundLines[foundLines.length-3].text.includes(targetLine2) || 
-  foundLines[foundLines.length-4].text.includes(targetLine2) 
+    const successfull = targetLines.some(line => isSimilar(line.text, targetLine));
+    const failedDownload = targetLines.some(line => isSimilar(line.text, targetLine2));
+    const directoryEmpty = targetLines.some(line => isSimilar(line.text, targetLine3));
 
-  const directoryEmpty =     foundLines[foundLines.length-1].text.includes(targetLine3) || 
-  foundLines[foundLines.length-2].text.includes(targetLine3) || 
-  foundLines[foundLines.length-3].text.includes(targetLine3) || 
-  foundLines[foundLines.length-4].text.includes(targetLine3) 
-
+    console.log("successfullyUploaded",successfull)
+    console.log("failedDownload",failedDownload)
+    console.log("directoryEmpty",directoryEmpty)
 
 
 
 
   if (directoryEmpty) {
-    console.log(`directoryEmpty ${directoryEmpty}`)
-    const noProject = foundLines[foundLines.length-1].text.includes(targetLine4) || 
-    foundLines[foundLines.length-2].text.includes(targetLine4) || 
-    foundLines[foundLines.length-3].text.includes(targetLine4) || 
-    foundLines[foundLines.length-4].text.includes(targetLine4) 
-
+     const noProject = foundLines.some(line => isSimilar(line.text, targetLine4));
+     console.log("noProject",noProject)
     if (noProject) {
       console.log("no projects stop observation")
       clearInterval(id)
@@ -281,6 +338,7 @@ async function handleQuantStatus (id) {
     await runBot()
   }
 }
+
 
 
 
