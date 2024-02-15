@@ -1,3 +1,4 @@
+const { execSync } = require('child_process');
 const { CronJob } = require('cron');
 const robot = require('robotjs');
 const fs = require('fs');
@@ -37,7 +38,7 @@ async function performOCRAndFindWords() {
       logger: info => console.log(),
     }).then(({ data: { text, lines } }) => {
       // Выведите распознанный текст
-      console.log('Распознанный текст:', text);
+      // console.log('Распознанный текст:', text);
 
       // Создайте объект для хранения слов и их координат
       const wordsWithCoordinates = [];
@@ -94,7 +95,7 @@ async function performOCRAndFindLines() {
       logger: info => console.log(),
     }).then(({ data: { text, lines } }) => {
       // Выведите распознанный текст
-      console.log('Распознанный текст:', text);
+      // console.log('Распознанный текст:', text);
 
       // Создайте объект для хранения слов и их координат
       const linesFinded = [];
@@ -117,6 +118,14 @@ async function performOCRAndFindLines() {
   });
 }
 
+function moveMouse (x, y) {
+  console.log(`mousemove to ${x} ${y}`)
+  execSync(`xdotool mousemove ${x} ${y}`)
+}
+function mouseClick () {
+  console.log(`mouseclick`)
+  execSync(`xdotool click 1`)
+}
 
 
 async function findAndClick (name, position = undefined) {
@@ -125,32 +134,32 @@ async function findAndClick (name, position = undefined) {
     const [x , y] = position
     await new Promise((resolve) => {
       try {
-        robot.moveMouse(x, y);
-        robot.mouseClick('left');
+        moveMouse(x, y);
+        mouseClick();
       } catch (error) {
         console.log("findAndClick err:",error)
       }
      
       setTimeout(() => {
         resolve([x, y]);
-      }, 2000);
+      }, 1000);
     });
   } else {
     const wordsWithCoordinates = await performOCRAndFindWords();
-  console.log('Слова с координатами:', wordsWithCoordinates);
+  console.log('found strings splitet by word:', wordsWithCoordinates);
   const foundObject = wordsWithCoordinates.find(
     obj => obj.text === targetWord
   );
 
   if (foundObject) {
-    console.log('Найден объект:', foundObject);
+    console.log('foundObject:', foundObject);
     const { left, top } = foundObject.coordinates;
     await new Promise((resolve) => {
-      robot.moveMouse(windowPosition.x + left, windowPosition.y-50 + top);
-      robot.mouseClick('left');
+      moveMouse(windowPosition.x + left, windowPosition.y-50 + top);
+      mouseClick();
       setTimeout(() => {
         resolve([windowPosition.x + left, windowPosition.y-50 + top]);
-      }, 2000);
+      }, 1000);
     });
     
    
@@ -202,6 +211,7 @@ async function runBot () {
 
 startObservation()
 function startObservation () {
+  console.log("started observation")
   watchingNow = true
   const intrId = setInterval(()=>{
     handleQuantStatus(intrId)
@@ -222,7 +232,7 @@ async function handleQuantStatus (id) {
   
   // 
   // 
-  console.log('найденые строки:', foundLines);
+  console.log('found strings:', foundLines);
 
    if (foundLines.length <4) return
 
@@ -245,16 +255,18 @@ async function handleQuantStatus (id) {
 
 
   if (directoryEmpty) {
+    console.log(`directoryEmpty ${directoryEmpty}`)
     const noProject = foundLines[foundLines.length-1].text.includes(targetLine4) || 
     foundLines[foundLines.length-2].text.includes(targetLine4) || 
     foundLines[foundLines.length-3].text.includes(targetLine4) || 
     foundLines[foundLines.length-4].text.includes(targetLine4) 
 
     if (noProject) {
-      console.log("no projects stop wwatching")
+      console.log("no projects stop observation")
       clearInterval(id)
       watchingNow = false
     } else {
+      console.log("line 'There are no available projects' not found, run Bot")
       await runBot()
       return
     }
