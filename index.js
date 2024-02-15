@@ -124,11 +124,16 @@ async function findAndClick (name, position = undefined) {
   if (position) {
     const [x , y] = position
     await new Promise((resolve) => {
-      robot.moveMouse(x, y);
-      robot.mouseClick('left');
+      try {
+        robot.moveMouse(x, y);
+        robot.mouseClick('left');
+      } catch (error) {
+        console.log("findAndClick err:",error)
+      }
+     
       setTimeout(() => {
         resolve([x, y]);
-      }, 1000);
+      }, 2000);
     });
   } else {
     const wordsWithCoordinates = await performOCRAndFindWords();
@@ -145,7 +150,7 @@ async function findAndClick (name, position = undefined) {
       robot.mouseClick('left');
       setTimeout(() => {
         resolve([windowPosition.x + left, windowPosition.y-50 + top]);
-      }, 1000);
+      }, 2000);
     });
     
    
@@ -208,7 +213,8 @@ function startObservation () {
 
 async function handleQuantStatus (id) {
 
-  const foundLines = await performOCRAndFindLines();
+  const lines = await performOCRAndFindLines();
+  const foundLines = lines.filter(obj => obj.text.length >= 10);
   const targetLine = 'The project was successfully uploaded';
   const targetLine2 = 'Failed to download the project';
   const targetLine3 = 'There is no project here';
@@ -242,11 +248,7 @@ async function handleQuantStatus (id) {
     const noProject = foundLines[foundLines.length-1].text.includes(targetLine4) || 
     foundLines[foundLines.length-2].text.includes(targetLine4) || 
     foundLines[foundLines.length-3].text.includes(targetLine4) || 
-    foundLines[foundLines.length-4].text.includes(targetLine4) ||
-    foundLines[foundLines.length-5].text.includes(targetLine4) ||
-    foundLines[foundLines.length-6].text.includes(targetLine4) ||
-    foundLines[foundLines.length-7].text.includes(targetLine4) ||
-    foundLines[foundLines.length-8].text.includes(targetLine4) 
+    foundLines[foundLines.length-4].text.includes(targetLine4) 
 
     if (noProject) {
       console.log("no projects stop wwatching")
