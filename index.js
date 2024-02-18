@@ -316,7 +316,7 @@ async function handleQuantStatus (id) {
 
 
   if (directoryEmpty) {
-     const noProject = foundLines.some(line => isSimilar(line.text, targetLine4));
+     const noProject = targetLines.some(line => isSimilar(line.text, targetLine4));
      console.log("noProject",noProject)
     if (noProject) {
       console.log("no projects stop observation")
