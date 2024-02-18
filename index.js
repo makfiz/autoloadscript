@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+const { execSync, exec } = require('child_process');
 const { CronJob } = require('cron');
 const stringSimilarity = require('string-similarity');
 const robot = require('robotjs');
@@ -6,19 +6,38 @@ const fs = require('fs');
 require('./node_modules/robotjs/build/Release/robotjs.node');
 const jimp = require('jimp');
 const Tesseract = require('tesseract.js');
-const {  windowPosition,
-  id,
-  width,
-  height} = require('./quant')
-  
-let watchingNow = false
+const { findLargestWindow, getWindowPositionById } = require('./quant');
 
+let windowPosition;
+let width;
+let height;
+let watchingNow = false;
+let intrId;
+let botPosition;
+let downloadPosition;
+let runPosition;
+
+async function getQuantWindowParam() {
+  const title = 'Quant';
+  try {
+    const { id, width: newWidth, height: newHeight } = findLargestWindow(title);
+    const newPosition = getWindowPositionById(id);
+    windowPosition = newPosition;
+    width = newWidth;
+    height = newHeight;
+  } catch (error) {
+    console.error('Произошла ошибка:', error);
+    throw error;
+  }
+}
+
+getQuantWindowParam();
 
 async function performOCRAndFindWords() {
   return new Promise((resolve, reject) => {
     const screen = robot.screen.capture(
       windowPosition.x,
-      windowPosition.y-50,
+      windowPosition.y - 50,
       width,
       height
     );
@@ -75,7 +94,7 @@ async function performOCRAndFindLines() {
   return new Promise((resolve, reject) => {
     const screen = robot.screen.capture(
       windowPosition.x,
-      windowPosition.y-50,
+      windowPosition.y - 50,
       width,
       height
     );
@@ -119,107 +138,85 @@ async function performOCRAndFindLines() {
   });
 }
 
-function moveMouse (x, y) {
-  console.log(`mousemove to ${x} ${y}`)
-  execSync(`xdotool mousemove ${x} ${y}`)
+function moveMouse(x, y) {
+  console.log(`mousemove to ${x} ${y}`);
+  execSync(`xdotool mousemove ${x} ${y}`);
 }
-function mouseClick () {
-  console.log(`mouseclick`)
-  execSync(`xdotool click 1`)
+function mouseClick() {
+  console.log(`mouseclick`);
+  execSync(`xdotool click 1`);
 }
 
-
-async function findAndClick (name, position = undefined) {
+async function findAndClick(name, position = undefined) {
   const targetWord = name; // Текст, который мы ищем
   if (position) {
-    const [x , y] = position
-    await new Promise((resolve) => {
+    const [x, y] = position;
+    await new Promise(resolve => {
       try {
         moveMouse(x, y);
         mouseClick();
       } catch (error) {
-        console.log("findAndClick err:",error)
+        console.log('findAndClick err:', error);
       }
-     
+
       setTimeout(() => {
         resolve([x, y]);
       }, 1500);
     });
   } else {
     const wordsWithCoordinates = await performOCRAndFindWords();
-  console.log('found strings splitet by word:', wordsWithCoordinates);
-  const foundObject = wordsWithCoordinates.find(
-    obj => obj.text === targetWord
-  );
+    console.log('found strings splitet by word:', wordsWithCoordinates);
+    const foundObject = wordsWithCoordinates.find(
+      obj => obj.text === targetWord
+    );
 
-  if (foundObject) {
-    console.log('foundObject:', foundObject);
-    const { left, top } = foundObject.coordinates;
-    await new Promise((resolve) => {
-      moveMouse(windowPosition.x + left, windowPosition.y-50 + top);
-      mouseClick();
-      setTimeout(() => {
-        resolve([windowPosition.x + left, windowPosition.y-50 + top]);
-      }, 1500);
-    });
-    
-   
-    
-  } 
+    if (foundObject) {
+      console.log('foundObject:', foundObject);
+      const { left, top } = foundObject.coordinates;
+      await new Promise(resolve => {
+        moveMouse(windowPosition.x + left, windowPosition.y - 50 + top);
+        mouseClick();
+        setTimeout(() => {
+          resolve([windowPosition.x + left, windowPosition.y - 50 + top]);
+        }, 1500);
+      });
+    }
   }
-  
 }
 
-let botPosition 
-let downloadPosition
-let runPosition
-
-
-async function firstRun () {
-  botPosition = await findAndClick("Bot")
-  downloadPosition = await findAndClick("Download")
- await   new Promise((resolve) => {
-  setTimeout(async ()=>{
-    
-    await findAndClick("Bot")
-    runPosition = await findAndClick("Run")
-    resolve()
-  }, 15000)
- })
- 
-
-
+async function firstRun() {
+  botPosition = await findAndClick('Bot');
+  downloadPosition = await findAndClick('Download');
+  await new Promise(resolve => {
+    setTimeout(async () => {
+      await findAndClick('Bot');
+      runPosition = await findAndClick('Run');
+      resolve();
+    }, 15000);
+  });
 }
 
-setTimeout(firstRun,10000)
+setTimeout(firstRun, 5000);
 
-
-async function runBot () {
-  botPosition = await findAndClick("Bot", botPosition)
-  downloadPosition = await findAndClick("Download", downloadPosition)
- await   new Promise((resolve) => {
-  setTimeout(async ()=>{
-    
-    await findAndClick("Bot", botPosition)
-    runPosition = await findAndClick("Run", runPosition)
-    resolve()
-  }, 15000)
- })
- 
-
-
+async function runBot() {
+  botPosition = await findAndClick('Bot', botPosition);
+  downloadPosition = await findAndClick('Download', downloadPosition);
+  await new Promise(resolve => {
+    setTimeout(async () => {
+      await findAndClick('Bot', botPosition);
+      runPosition = await findAndClick('Run', runPosition);
+      resolve();
+    }, 15000);
+  });
 }
 
-startObservation()
-function startObservation () {
-  console.log("started observation")
-  watchingNow = true
-  const intrId = setInterval(()=>{
-    handleQuantStatus(intrId)
-  },60000)
-  
-  
- 
+startObservation();
+function startObservation() {
+  console.log('started observation');
+  watchingNow = true;
+  intrId = setInterval(() => {
+    handleQuantStatus(intrId);
+  }, 60000);
 }
 
 // async function handleQuantStatus (id) {
@@ -230,37 +227,33 @@ function startObservation () {
 //   const targetLine2 = 'failed to download the project';
 //   const targetLine3 = 'there is no project here';
 //   const targetLine4 = "there are no available projects"
-  
-//   // 
-//   // 
+
+//   //
+//   //
 //   console.log('found strings:', foundLines);
 
 //    if (foundLines.length <4) return
 
-//   const successfull =     foundLines[foundLines.length-1].text.toLowerCase().includes(targetLine) || 
-//   foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine) || 
-//   foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine) || 
-//   foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine) 
-//   const failedDownload =     foundLines[foundLines.length-1].text.includes(targetLine2) || 
-//   foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine2) || 
-//   foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine2) || 
-//   foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine2) 
+//   const successfull =     foundLines[foundLines.length-1].text.toLowerCase().includes(targetLine) ||
+//   foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine) ||
+//   foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine) ||
+//   foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine)
+//   const failedDownload =     foundLines[foundLines.length-1].text.includes(targetLine2) ||
+//   foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine2) ||
+//   foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine2) ||
+//   foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine2)
 
-//   const directoryEmpty =     foundLines[foundLines.length-1].text.includes(targetLine3) || 
-//   foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine3) || 
-//   foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine3) || 
-//   foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine3) 
-
-
-
-
+//   const directoryEmpty =     foundLines[foundLines.length-1].text.includes(targetLine3) ||
+//   foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine3) ||
+//   foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine3) ||
+//   foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine3)
 
 //   if (directoryEmpty) {
 //     console.log(`directoryEmpty ${directoryEmpty}`)
-//     const noProject = foundLines[foundLines.length-1].text.toLowerCase().includes(targetLine4) || 
-//     foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine4) || 
-//     foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine4) || 
-//     foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine4) 
+//     const noProject = foundLines[foundLines.length-1].text.toLowerCase().includes(targetLine4) ||
+//     foundLines[foundLines.length-2].text.toLowerCase().includes(targetLine4) ||
+//     foundLines[foundLines.length-3].text.toLowerCase().includes(targetLine4) ||
+//     foundLines[foundLines.length-4].text.toLowerCase().includes(targetLine4)
 
 //     if (noProject) {
 //       console.log("no projects stop observation")
@@ -273,97 +266,127 @@ function startObservation () {
 //       return
 //     }
 
-    
 //   }
-
- 
 
 //   if (successfull || failedDownload ) {
 //     await runBot()
 //   }
 // }
 
-async function handleQuantStatus (id) {
-
+async function handleQuantStatus(id) {
   const lines = await performOCRAndFindLines();
   const foundLines = lines.filter(obj => obj.text.length >= 10);
-  if (foundLines.length <4) return
+  if (foundLines.length < 4) return;
   const targetLines = foundLines.slice(-5);
-  
-  const targetLine = 'the project was successfully uploaded';
-  const targetLine2 = 'failed to download the project';
-  const targetLine3 = 'there is no project here';
-  const targetLine4 = "there are no available projects"
-  
-  // 
-  // 
+
+  const targetLine = 'The project was successfully uploaded';
+  const targetLine2 = 'Failed to download the project';
+  const targetLine3 = 'There is no project here';
+  const targetLine4 = 'There are no available projects';
+  const targetLine5 = 'You need to re-enter the Quant';
+
+  //
+  //
   console.log('found strings:', foundLines);
 
   const isSimilar = (line, target) => {
-    const similarity = stringSimilarity.compareTwoStrings(line.toLowerCase(), target.toLowerCase());
+    const similarity = stringSimilarity.compareTwoStrings(
+      line.toLowerCase(),
+      target.toLowerCase()
+    );
     return similarity >= 0.75; // Порог сходства 80%
-};
+  };
 
-    const successfull = targetLines.some(line => isSimilar(line.text, targetLine));
-    const failedDownload = targetLines.some(line => isSimilar(line.text, targetLine2));
-    const directoryEmpty = targetLines.some(line => isSimilar(line.text, targetLine3));
+  const successfull = targetLines.some(line =>
+    isSimilar(line.text, targetLine)
+  );
+  const failedDownload = targetLines.some(line =>
+    isSimilar(line.text, targetLine2)
+  );
+  const directoryEmpty = targetLines.some(line =>
+    isSimilar(line.text, targetLine3)
+  );
+  const needReOpen = targetLines.some(line =>
+    isSimilar(line.text, targetLine5)
+  );
 
-    console.log("successfullyUploaded",successfull)
-    console.log("failedDownload",failedDownload)
-    console.log("directoryEmpty",directoryEmpty)
+  console.log('successfullyUploaded', successfull);
+  console.log('failedDownload', failedDownload);
+  console.log('directoryEmpty', directoryEmpty);
+  console.log('needReOpenQuant', needReOpen);
 
-
-
-
-  if (directoryEmpty) {
-     const noProject = targetLines.some(line => isSimilar(line.text, targetLine4));
-     console.log("noProject",noProject)
-    if (noProject) {
-      console.log("no projects stop observation")
-      clearInterval(id)
-      watchingNow = false
-      return
-    } else {
-      console.log("line 'There are no available projects' not found, run Bot")
-      await runBot()
-      return
-    }
-
-    
+  if (needReOpen) {
+    reopenQuant()
   }
 
- 
+  if (directoryEmpty) {
+    const noProject = targetLines.some(line =>
+      isSimilar(line.text, targetLine4)
+    );
+    console.log('noProject', noProject);
+    if (noProject) {
+      console.log('no projects stop observation');
+      clearInterval(id);
+      watchingNow = false;
+      return;
+    } else {
+      console.log("line 'There are no available projects' not found, run Bot");
+      await runBot();
+      return;
+    }
+  }
 
-  if (successfull || failedDownload ) {
-    await runBot()
+  if (successfull || failedDownload) {
+    await runBot();
   }
 }
 
+function reopenQuant() {
+  clearInterval(intrId);
+  execSync(`killall Quant`);
+  exec(`~/Quant/Quant`);
+  setTimeout(async () => {
+    try {
+      await getQuantWindowParam();
+      await firstRun();
+      startObservation();
+    } catch (error) {
+      console.log(error)
+    }
+  }, 60000);
+}
 
+const taskMorning = new CronJob(
+  '15 7 * * 1-5',
+  async () => {
+    if (!watchingNow) {
+      watchingNow = true;
+      await firstRun();
+      startObservation();
+    } else {
+      return;
+    }
+  },
+  null,
+  true,
+  'Europe/Kiev'
+);
 
-
-
-const taskMorning = new CronJob('15 7 * * 1-5', async () => {
-  if (!watchingNow) {
-    watchingNow = true
-    await firstRun()
-    startObservation()
-  } else {
-    return
-  }
-
-}, null, true, 'Europe/Kiev'); 
-
-const taskEvening = new CronJob('30 21 * * 1-5', async () => {
-  if (!watchingNow) {
-    watchingNow = true
-    await firstRun()
-    startObservation()
-  } else {
-    return
-  }
-}, null, true, 'Europe/Kiev'); 
-
+const taskEvening = new CronJob(
+  '30 21 * * 1-5',
+  async () => {
+    if (!watchingNow) {
+      watchingNow = true;
+      await firstRun();
+      startObservation();
+    } else {
+      return;
+    }
+  },
+  null,
+  true,
+  'Europe/Kiev'
+);
 
 taskMorning.start();
 taskEvening.start();

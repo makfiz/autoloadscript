@@ -68,23 +68,11 @@ function getWindowPositionById(windowId) {
     return null;
   }
 
-const title = 'Quant';
 
-const {id, width, height} = findLargestWindow(title);
-const windowPosition = getWindowPositionById(id)
-
-if (!id) {
-  console.log(`No windows found with title "${title}".`);
-  // console.log(qwe);
-} else {
-  
-}
 
 
 
 module.exports = {
-    windowPosition,
-    id,
-    width,
-    height
+  findLargestWindow,
+  getWindowPositionById
   };
