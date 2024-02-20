@@ -311,9 +311,9 @@ async function handleQuantStatus(id) {
     const wordsWithCoordinates = await performOCRAndFindWords(windowPosition,width,height);
     console.log('wordsWithCoordinates:', wordsWithCoordinates);
     
-    const foundObject = wordsWithCoordinates.find(obj =>
-      isSimilar(obj.text, targetWord))
-
+    const foundObject = wordsWithCoordinates.find(
+      obj => obj.text.includes(targetWord))
+      
       console.log('foundObject:', foundObject);
     if (foundObject) {
      
@@ -371,8 +371,8 @@ function reopenQuant() {
   }, 60000);
 }
 
-const taskMorning = new CronJob(
-  '15 7 * * 1-5',
+const observationTask = new CronJob(
+  '40 7,14,21 * * 1-5',
   async () => {
     if (!watchingNow) {
       watchingNow = true;
@@ -387,21 +387,4 @@ const taskMorning = new CronJob(
   'Europe/Kiev'
 );
 
-const taskEvening = new CronJob(
-  '30 21 * * 1-5',
-  async () => {
-    if (!watchingNow) {
-      watchingNow = true;
-      await firstRun();
-      startObservation();
-    } else {
-      return;
-    }
-  },
-  null,
-  true,
-  'Europe/Kiev'
-);
-
-taskMorning.start();
-taskEvening.start();
+observationTask.start();
