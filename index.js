@@ -263,6 +263,7 @@ async function handleQuantStatus(id) {
   const targetLine5 = 'You need to re-enter the Quant';
   const targetLine6 = "Lost internet connection"
   const targetLine7 = "Unable to connect to platform"
+  // const targetWord = 'Login'
   // 
   //
   //
