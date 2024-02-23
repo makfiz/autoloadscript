@@ -179,18 +179,19 @@ async function findAndClick(name, position = undefined) {
   const targetWord = name; // Текст, который мы ищем
   if (position) {
     const [x, y] = position;
-    await new Promise(resolve => {
-      try {
-        moveMouse(x, y);
-        mouseClick();
-      } catch (error) {
-        console.log('findAndClick err:', error);
-      }
+    await mouseMoveAndClick(x, y)
+    // await new Promise(resolve => {
+    //   try {
+    //     moveMouse(x, y);
+    //     mouseClick();
+    //   } catch (error) {
+    //     console.log('findAndClick err:', error);
+    //   }
 
-      setTimeout(() => {
-        resolve([x, y]);
-      }, 1500);
-    });
+    //   setTimeout(() => {
+    //     resolve([x, y]);
+    //   }, 1500);
+    // });
   } else {
     const wordsWithCoordinates = await performOCRAndFindWords(windowPosition,width,height);
     console.log('found strings splitet by word:', wordsWithCoordinates);
@@ -201,13 +202,14 @@ async function findAndClick(name, position = undefined) {
     if (foundObject) {
       console.log('foundObject:', foundObject);
       const { left, top } = foundObject.coordinates;
-      await new Promise(resolve => {
-        moveMouse(windowPosition.x + left, windowPosition.y - 50 + top);
-        mouseClick();
-        setTimeout(() => {
-          resolve([windowPosition.x + left, windowPosition.y - 50 + top]);
-        }, 1500);
-      });
+      await mouseMoveAndClick(windowPosition.x + left, windowPosition.y - 50 + top)
+      // await new Promise(resolve => {
+      //   moveMouse(windowPosition.x + left, windowPosition.y - 50 + top);
+      //   mouseClick();
+      //   setTimeout(() => {
+      //     resolve([windowPosition.x + left, windowPosition.y - 50 + top]);
+      //   }, 1500);
+      // });
     }
   }
 }
@@ -249,8 +251,7 @@ function startObservation() {
 
 
 async function handleQuantStatus(id) {
-  moveMouse(windowPosition.x, windowPosition.y);
-  mouseClick();
+  await mouseMoveAndClick(windowPosition.x, windowPosition.y);
   const lines = await performOCRAndFindLines(windowPosition,width,height);
   const foundLines = lines.filter(obj => obj.text.length >= 10);
   if (foundLines.length < 4) return;
@@ -319,13 +320,14 @@ async function handleQuantStatus(id) {
     if (foundObject) {
      
       const { left, top } = foundObject.coordinates;
-      await new Promise(resolve => {
-        moveMouse(windowPosition.x + left, windowPosition.y - 50 + top);
-        mouseClick();
-        setTimeout(() => {
-          resolve([windowPosition.x + left, windowPosition.y - 50 + top]);
-        }, 1500);
-      });
+      await mouseMoveAndClick(windowPosition.x + left, windowPosition.y - 50 + top)
+      // await new Promise(resolve => {
+      //   moveMouse(windowPosition.x + left, windowPosition.y - 50 + top);
+      //   mouseClick();
+      //   setTimeout(() => {
+      //     resolve([windowPosition.x + left, windowPosition.y - 50 + top]);
+      //   }, 1500);
+      // });
     }
     return
   }
@@ -372,8 +374,23 @@ function reopenQuant() {
   }, 60000);
 }
 
+function mouseMoveAndClick (x,y) {
+  return new Promise(resolve => {
+    moveMouse(x, y);
+    setTimeout(() => {
+      mouseClick();
+      setTimeout(() => {
+        resolve([x, y]);
+      }, 1500);
+    }, 250);
+    
+    
+  });
+}
+
+
 const observationTask = new CronJob(
-  '40 7,14,21 * * 1-5',
+  '40 7,14,17,21 * * 1-5',
   async () => {
     if (!watchingNow) {
       watchingNow = true;
