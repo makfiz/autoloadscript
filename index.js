@@ -16,6 +16,7 @@ let intrId;
 let botPosition;
 let downloadPosition;
 let runPosition;
+let cycle = 0
 
 
 async function getWindowParam(title) {
@@ -176,7 +177,7 @@ function mouseClick() {
 }
 
 async function findAndClick(name, position = undefined) {
-  const targetWord = name; // Текст, который мы ищем
+  const targetWord = name.toLowerCase(); // Текст, который мы ищем
   if (position) {
     const [x, y] = position;
     await mouseMoveAndClick(x, y)
@@ -196,7 +197,7 @@ async function findAndClick(name, position = undefined) {
     const wordsWithCoordinates = await performOCRAndFindWords(windowPosition,width,height);
     console.log('found strings splitet by word:', wordsWithCoordinates);
     const foundObject = wordsWithCoordinates.find(
-      obj => obj.text === targetWord
+      obj => obj.text.toLowerCase() === targetWord
     );
 
     if (foundObject) {
@@ -226,7 +227,15 @@ async function firstRun() {
   });
 }
 
+async function proxyOn() {
+  await findAndClick('Bot');
+  await findAndClick('Proxy');
+  await findAndClick('On');
+}
+
 setTimeout(firstRun, 5000);
+
+
 
 async function runBot() {
   botPosition = await findAndClick('Bot', botPosition);
@@ -253,6 +262,7 @@ function startObservation() {
 async function handleQuantStatus(id) {
   await mouseMoveAndClick(windowPosition.x, windowPosition.y);
   const lines = await performOCRAndFindLines(windowPosition,width,height);
+  console.log(lines)
   const foundLines = lines.filter(obj => obj.text.length >= 10);
   if (foundLines.length < 4) return;
   const targetLines = foundLines.slice(-4);
@@ -305,6 +315,12 @@ async function handleQuantStatus(id) {
   console.log('failedDownload', failedDownload);
   console.log('directoryEmpty', directoryEmpty);
   console.log('needReOpenQuant', needReOpen);
+
+  cycle += 1
+  if (cycle == 10) {
+    cycle = 0
+    await findAndClick('Enter');
+  }
 
 
   if (internetConnection || platformConnection) {
@@ -366,6 +382,7 @@ function reopenQuant() {
   setTimeout(async () => {
     try {
       await getQuantWindowParam();
+      await proxyOn()
       await firstRun();
       startObservation();
     } catch (error) {
@@ -390,11 +407,11 @@ function mouseMoveAndClick (x,y) {
 
 
 const observationTask = new CronJob(
-  '40 7,14,17,21 * * 1-5',
+  '40 7,8,14,17,19,21 * * 1-5',
   async () => {
     if (!watchingNow) {
       watchingNow = true;
-      await firstRun();
+      await runBot();
       startObservation();
     } else {
       return;
