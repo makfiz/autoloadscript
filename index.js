@@ -1,4 +1,4 @@
-const { execSync, exec } = require('child_process');
+const { execSync, exec, spawn } = require('child_process');
 const { CronJob } = require('cron');
 const stringSimilarity = require('string-similarity');
 const robot = require('robotjs');
@@ -17,6 +17,8 @@ let botPosition;
 let downloadPosition;
 let runPosition;
 let cycle = 0
+
+
 
 
 async function getWindowParam(title) {
@@ -378,7 +380,13 @@ async function handleQuantStatus(id) {
 
 function reopenQuant() {
   execSync(`killall Quant`);
-  exec(`~/Quant/Quant`);
+  const terminalTitle = 'TerminalLogs'
+  const process = spawn('xterm', ['-T', terminalTitle, '-e', '~/Quant/Quant'], {
+      detached: true,
+      stdio: 'ignore'
+  });
+  
+  process.unref(); 
   setTimeout(async () => {
     try {
       await getQuantWindowParam();
@@ -388,7 +396,7 @@ function reopenQuant() {
     } catch (error) {
       console.log(error)
     }
-  }, 60000);
+  }, 45000);
 }
 
 function mouseMoveAndClick (x,y) {
@@ -399,7 +407,7 @@ function mouseMoveAndClick (x,y) {
       setTimeout(() => {
         resolve([x, y]);
       }, 1500);
-    }, 250);
+    }, 500);
     
     
   });
@@ -407,7 +415,7 @@ function mouseMoveAndClick (x,y) {
 
 
 const observationTask = new CronJob(
-  '40 7,8,14,17,19,21 * * 1-5',
+  '20 7,8,9,14,17,19,21 * * 1-5',
   async () => {
     if (!watchingNow) {
       watchingNow = true;
