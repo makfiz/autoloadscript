@@ -232,7 +232,7 @@ async function firstRun() {
 async function proxyOn() {
   await findAndClick('Bot');
   await findAndClick('Proxy');
-  await findAndClick('On');
+  await findAndClick('Test');
 }
 
 setTimeout(firstRun, 5000);
@@ -267,7 +267,7 @@ async function handleQuantStatus(id) {
   console.log(lines)
   const foundLines = lines.filter(obj => obj.text.length >= 10);
   if (foundLines.length < 4) return;
-  const targetLines = foundLines.slice(-4);
+  const foundLinesSliced = foundLines.slice(-4);
 
   const targetLine = 'The project was successfully uploaded';
   const targetLine2 = 'Failed to download the project';
@@ -276,6 +276,7 @@ async function handleQuantStatus(id) {
   const targetLine5 = 'You need to re-enter the Quant';
   const targetLine6 = "Lost internet connection"
   const targetLine7 = "Unable to connect to platform"
+  const targetLine8 = "Do you really want to interrupt the bot process"
   // const targetWord = 'Login'
   // 
   //
@@ -290,7 +291,6 @@ async function handleQuantStatus(id) {
     return similarity >= 0.74; // Порог сходства 
   };
 
-
   const internetConnection = foundLines.some(line =>
     isSimilar(line.text, targetLine6)
   );
@@ -299,16 +299,20 @@ async function handleQuantStatus(id) {
     isSimilar(line.text, targetLine7)
   );
 
-  const successfull = targetLines.some(line =>
+  // const interruptProcess = foundLines.some(line =>
+  //   isSimilar(line.text, targetLine8)
+  // );
+
+  const successfull = foundLinesSliced.some(line =>
     isSimilar(line.text, targetLine)
   );
-  const failedDownload = targetLines.some(line =>
+  const failedDownload = foundLinesSliced.some(line =>
     isSimilar(line.text, targetLine2)
   );
-  const directoryEmpty = targetLines.some(line =>
+  const directoryEmpty = foundLinesSliced.some(line =>
     isSimilar(line.text, targetLine3)
   );
-  const needReOpen = targetLines.some(line =>
+  const needReOpen = foundLinesSliced.some(line =>
     isSimilar(line.text, targetLine5)
   );
 
@@ -332,23 +336,34 @@ async function handleQuantStatus(id) {
     console.log('wordsWithCoordinates:', wordsWithCoordinates);
     
     const foundObject = wordsWithCoordinates.find(
-      obj => obj.text.includes(targetWord))
+      obj => obj.text.toLowerCase().includes(targetWord.toLowerCase()))
       
       console.log('foundObject:', foundObject);
     if (foundObject) {
      
       const { left, top } = foundObject.coordinates;
       await mouseMoveAndClick(windowPosition.x + left, windowPosition.y - 50 + top)
-      // await new Promise(resolve => {
-      //   moveMouse(windowPosition.x + left, windowPosition.y - 50 + top);
-      //   mouseClick();
-      //   setTimeout(() => {
-      //     resolve([windowPosition.x + left, windowPosition.y - 50 + top]);
-      //   }, 1500);
-      // });
     }
     return
   }
+
+  // if (interruptProcess) {
+  //   const targetWord = 'No'
+  //   const { windowPosition, width, height} = await getWindowParam('Quant');
+  //   const wordsWithCoordinates = await performOCRAndFindLines(windowPosition,width,height);
+  //   console.log('wordsWithCoordinates:', wordsWithCoordinates);
+    
+  //   const foundObject = wordsWithCoordinates.find(
+  //     obj => obj.text.toLowerCase().includes(targetWord.toLowerCase()))
+      
+  //     console.log('foundObject:', foundObject);
+  //   if (foundObject) {
+     
+  //     const { left, top } = foundObject.coordinates;
+  //     await mouseMoveAndClick(windowPosition.x + left, windowPosition.y - 50 + top)
+  //   }
+  //   return
+  // }
 
   if (needReOpen) {
     clearInterval(id);
@@ -357,7 +372,7 @@ async function handleQuantStatus(id) {
   }
 
   if (directoryEmpty) {
-    const noProject = targetLines.some(line =>
+    const noProject = foundLinesSliced.some(line =>
       isSimilar(line.text, targetLine4)
     );
     console.log('noProject', noProject);
@@ -396,7 +411,7 @@ function reopenQuant() {
     } catch (error) {
       console.log(error)
     }
-  }, 45000);
+  }, 15000);
 }
 
 function mouseMoveAndClick (x,y) {
@@ -415,7 +430,7 @@ function mouseMoveAndClick (x,y) {
 
 
 const observationTask = new CronJob(
-  '20 7,8,9,14,17,19,21 * * 1-5',
+  '20 7,8,9,10,11,15,17,19,21 * * 1-5',
   async () => {
     if (!watchingNow) {
       watchingNow = true;
