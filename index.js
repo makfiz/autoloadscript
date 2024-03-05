@@ -299,9 +299,9 @@ async function handleQuantStatus(id) {
     isSimilar(line.text, targetLine7)
   );
 
-  // const interruptProcess = foundLines.some(line =>
-  //   isSimilar(line.text, targetLine8)
-  // );
+  const interruptProcess = foundLines.some(line =>
+    isSimilar(line.text, targetLine8)
+  );
 
   const successfull = foundLinesSliced.some(line =>
     isSimilar(line.text, targetLine)
@@ -325,45 +325,25 @@ async function handleQuantStatus(id) {
   cycle += 1
   if (cycle == 10) {
     cycle = 0
-    await findAndClick('Enter');
+    const { windowPosition, width, height} = await getWindowParam('Login');
+    await mouseMoveAndClick(windowPosition.x + 340, windowPosition.y - 50 + 80)
+    return
   }
 
 
   if (internetConnection || platformConnection) {
-    const targetWord = 'Retry'
     const { windowPosition, width, height} = await getWindowParam('Quant');
-    const wordsWithCoordinates = await performOCRAndFindWords(windowPosition,width,height);
-    console.log('wordsWithCoordinates:', wordsWithCoordinates);
-    
-    const foundObject = wordsWithCoordinates.find(
-      obj => obj.text.toLowerCase().includes(targetWord.toLowerCase()))
-      
-      console.log('foundObject:', foundObject);
-    if (foundObject) {
-     
-      const { left, top } = foundObject.coordinates;
-      await mouseMoveAndClick(windowPosition.x + left, windowPosition.y - 50 + top)
-    }
+    await mouseMoveAndClick(windowPosition.x + 215, windowPosition.y - 50 + 100)
     return
   }
 
-  // if (interruptProcess) {
-  //   const targetWord = 'No'
-  //   const { windowPosition, width, height} = await getWindowParam('Quant');
-  //   const wordsWithCoordinates = await performOCRAndFindLines(windowPosition,width,height);
-  //   console.log('wordsWithCoordinates:', wordsWithCoordinates);
-    
-  //   const foundObject = wordsWithCoordinates.find(
-  //     obj => obj.text.toLowerCase().includes(targetWord.toLowerCase()))
-      
-  //     console.log('foundObject:', foundObject);
-  //   if (foundObject) {
-     
-  //     const { left, top } = foundObject.coordinates;
-  //     await mouseMoveAndClick(windowPosition.x + left, windowPosition.y - 50 + top)
-  //   }
-  //   return
-  // }
+  if (interruptProcess) {
+   
+    const { windowPosition, width, height} = await getWindowParam('Quant');
+  
+      await mouseMoveAndClick(windowPosition.x + 270, windowPosition.y - 50 + 100)
+    return
+  }
 
   if (needReOpen) {
     clearInterval(id);
@@ -407,11 +387,11 @@ function reopenQuant() {
       await getQuantWindowParam();
       await proxyOn()
       await firstRun();
-      startObservation();
+      setTimeout(startObservation,60000)
     } catch (error) {
       console.log(error)
     }
-  }, 15000);
+  }, 30000);
 }
 
 function mouseMoveAndClick (x,y) {
@@ -434,8 +414,9 @@ const observationTask = new CronJob(
   async () => {
     if (!watchingNow) {
       watchingNow = true;
-      await runBot();
-      startObservation();
+      reopenQuant()
+      // await runBot();
+      // setTimeout(startObservation,60000)
     } else {
       return;
     }
@@ -446,3 +427,4 @@ const observationTask = new CronJob(
 );
 
 observationTask.start();
+
