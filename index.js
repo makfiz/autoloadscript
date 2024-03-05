@@ -325,8 +325,7 @@ async function handleQuantStatus(id) {
   cycle += 1
   if (cycle == 10) {
     cycle = 0
-    const { windowPosition, width, height} = await getWindowParam('Login');
-    await mouseMoveAndClick(windowPosition.x + 340, windowPosition.y - 50 + 80)
+    await findAndClick('Enter');
     return
   }
 
