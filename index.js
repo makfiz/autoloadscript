@@ -257,7 +257,7 @@ function startObservation() {
   watchingNow = true;
   intrId = setInterval(() => {
     handleQuantStatus(intrId);
-  }, 60000);
+  }, 30000);
 }
 
 
