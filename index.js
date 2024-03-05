@@ -411,7 +411,7 @@ function reopenQuant() {
     } catch (error) {
       console.log(error)
     }
-  }, 15000);
+  }, 30000);
 }
 
 function mouseMoveAndClick (x,y) {
@@ -434,8 +434,9 @@ const observationTask = new CronJob(
   async () => {
     if (!watchingNow) {
       watchingNow = true;
-      await runBot();
-      startObservation();
+      reopenQuant()
+      // await runBot();
+      // startObservation();
     } else {
       return;
     }
