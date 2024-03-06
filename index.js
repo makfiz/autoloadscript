@@ -6,7 +6,7 @@ const fs = require('fs');
 require('./node_modules/robotjs/build/Release/robotjs.node');
 const jimp = require('jimp');
 const Tesseract = require('tesseract.js');
-const { findLargestWindow, getWindowPositionById } = require('./quant');
+const { findLargestWindow, getWindowPositionById, getAllWindowsIdByTitle } = require('./quant');
 
 let windowPosition;
 let width;
@@ -21,7 +21,21 @@ let cycle = 0
 
 
 
-async function getWindowParam(title) {
+async function getAllWindowsParamByTitle(title) {
+  try {
+    let windows = getAllWindowsIdByTitle(title);
+    windows.forEach((window) => {
+      window.windowPosition = getWindowPositionById(window.id);
+    })
+
+    return windows
+  } catch (error) {
+    console.error('Произошла ошибка:', error);
+    throw error;
+  }
+}
+
+async function getWindowParamByTitle(title) {
   try {
     const { id, width, height } = findLargestWindow(title);
     const windowPosition = getWindowPositionById(id);
@@ -36,7 +50,7 @@ async function getWindowParam(title) {
 async function getQuantWindowParam() {
   const title = 'Quant';
   try {
-    const { windowPosition:newPosition, width: newWidth, height: newHeight } = await getWindowParam(title);
+    const { windowPosition:newPosition, width: newWidth, height: newHeight } = await getWindowParamByTitle(title);
     windowPosition = newPosition;
     width = newWidth;
     height = newHeight;
@@ -183,18 +197,6 @@ async function findAndClick(name, position = undefined) {
   if (position) {
     const [x, y] = position;
     await mouseMoveAndClick(x, y)
-    // await new Promise(resolve => {
-    //   try {
-    //     moveMouse(x, y);
-    //     mouseClick();
-    //   } catch (error) {
-    //     console.log('findAndClick err:', error);
-    //   }
-
-    //   setTimeout(() => {
-    //     resolve([x, y]);
-    //   }, 1500);
-    // });
   } else {
     const wordsWithCoordinates = await performOCRAndFindWords(windowPosition,width,height);
     console.log('found strings splitet by word:', wordsWithCoordinates);
@@ -222,10 +224,10 @@ async function firstRun() {
   downloadPosition = await findAndClick('Download');
   await new Promise(resolve => {
     setTimeout(async () => {
-      await findAndClick('Bot');
+      await findAndClick('Bot', botPosition);;
       runPosition = await findAndClick('Run');
       resolve();
-    }, 15000);
+    }, 10000);
   });
 }
 
@@ -247,7 +249,7 @@ async function runBot() {
       await findAndClick('Bot', botPosition);
       runPosition = await findAndClick('Run', runPosition);
       resolve();
-    }, 15000);
+    }, 10000);
   });
 }
 
@@ -257,7 +259,7 @@ function startObservation() {
   watchingNow = true;
   intrId = setInterval(() => {
     handleQuantStatus(intrId);
-  }, 30000);
+  }, 45000);
 }
 
 
@@ -277,6 +279,8 @@ async function handleQuantStatus(id) {
   const targetLine6 = "Lost internet connection"
   const targetLine7 = "Unable to connect to platform"
   const targetLine8 = "Do you really want to interrupt the bot process"
+  const targetLine9 = "Bot was successfully interrupted"
+  // Bot was successfully interrupted !
   // const targetWord = 'Login'
   // 
   //
@@ -301,6 +305,11 @@ async function handleQuantStatus(id) {
 
   const interruptProcess = foundLines.some(line =>
     isSimilar(line.text, targetLine8)
+  );
+
+
+  const botInterrupted = foundLines.some(line =>
+    isSimilar(line.text, targetLine9)
   );
 
   const successfull = foundLinesSliced.some(line =>
@@ -331,16 +340,20 @@ async function handleQuantStatus(id) {
 
 
   if (internetConnection || platformConnection) {
-    const { windowPosition, width, height} = await getWindowParam('Quant');
-    await mouseMoveAndClick(windowPosition.x + 215, windowPosition.y - 50 + 100)
+    const windows = await getAllWindowsParamByTitle('Quant');
+    windows.forEach(async (window) => {
+      const { windowPosition} = window
+      await mouseMoveAndClick(windowPosition.x + 215, windowPosition.y - 50 + 100)
+    })
     return
   }
 
   if (interruptProcess) {
-   
-    const { windowPosition, width, height} = await getWindowParam('Quant');
-  
+    const windows = await getAllWindowsParamByTitle('Quant');
+    windows.forEach(async (window) => {
+      const { windowPosition} = window
       await mouseMoveAndClick(windowPosition.x + 270, windowPosition.y - 50 + 100)
+    }) 
     return
   }
 
@@ -349,6 +362,7 @@ async function handleQuantStatus(id) {
     reopenQuant()
     return
   }
+
 
   if (directoryEmpty) {
     const noProject = foundLinesSliced.some(line =>
@@ -367,7 +381,7 @@ async function handleQuantStatus(id) {
     }
   }
 
-  if (successfull || failedDownload) {
+  if (successfull || failedDownload || botInterrupted) {
     await runBot();
   }
 }
@@ -384,9 +398,11 @@ function reopenQuant() {
   setTimeout(async () => {
     try {
       await getQuantWindowParam();
-      await proxyOn()
-      await firstRun();
-      setTimeout(startObservation,60000)
+      setTimeout(async ()=>{
+        await proxyOn()
+        await firstRun();
+        startObservation()
+      },5000)
     } catch (error) {
       console.log(error)
     }

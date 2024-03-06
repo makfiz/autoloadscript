@@ -53,6 +53,28 @@ function findLargestWindow(title) {
   return { id: largestWindowId, width: largestWindowWidth, height: largestWindowHeight };
 }
 
+function getAllWindowsIdByTitle(title) {
+  const windowIds = getWindowIdByTitle(title);
+  const AllWindows = [];
+
+  windowIds.forEach((windowId) => {
+    const windowGeometry = getWindowGeometryById(windowId);
+    console.log(`  Window Geometry: ${windowGeometry}`);
+
+    if (windowGeometry) {
+      const [, width, height] = windowGeometry.match(/Geometry:\s+(\d+)x(\d+)/) || [];
+      const currentWidth = parseInt(width, 10);
+
+      if (currentWidth > 100) {
+        const currentHeight = parseInt(height, 10);
+        AllWindows.push({ id: windowId, width: currentWidth, height: currentHeight });
+      }
+    }
+  });
+
+  return AllWindows;
+}
+
 function getWindowPositionById(windowId) {
     const windowGeometry = getWindowGeometryById(windowId);
   
@@ -74,5 +96,6 @@ function getWindowPositionById(windowId) {
 
 module.exports = {
   findLargestWindow,
-  getWindowPositionById
+  getWindowPositionById,
+  getAllWindowsIdByTitle
   };
