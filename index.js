@@ -430,8 +430,7 @@ const observationTask = new CronJob(
     if (!watchingNow) {
       watchingNow = true;
       reopenQuant()
-      // await runBot();
-      // setTimeout(startObservation,60000)
+
     } else {
       return;
     }
