@@ -90,12 +90,22 @@ function getWindowPositionById(windowId) {
     return null;
   }
 
-
-
-
+  function getWindowChrom() {
+    try {
+      const command = `xdotool search --name "Google Chrome"`;
+      const result = execSync(command, { encoding: 'utf-8' });
+      const windowIds = result.trim().split('\n');
+      console.log(windowIds)
+      return windowIds;
+    } catch (error) {
+      console.error('Error:', error.message);
+      return [];
+    }
+  }
 
 module.exports = {
   findLargestWindow,
   getWindowPositionById,
-  getAllWindowsIdByTitle
+  getAllWindowsIdByTitle,
+  getWindowChrom
   };
