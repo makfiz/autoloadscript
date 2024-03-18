@@ -3,6 +3,7 @@ const { CronJob } = require('cron');
 const stringSimilarity = require('string-similarity');
 const robot = require('robotjs');
 const fs = require('fs');
+const FormData = require('form-data');
 const fetch = require('node-fetch');
 const path = require('path');
 require('./node_modules/robotjs/build/Release/robotjs.node');
@@ -24,7 +25,10 @@ let botPosition;
 let downloadPosition;
 let runPosition;
 let cycle = 0;
+
 const userName = process.env.USERNAME || process.env.USER;
+const timer = startCountdown();
+timer.stop()
 
 async function getAllWindowsParamByTitle(title) {
   try {
@@ -181,6 +185,40 @@ async function performOCRAndFindLines(p, w, h) {
   });
 }
 
+ async function desktopSnapshot() {
+  try {
+    await new Promise((resolve, reject) => {
+      const screenSize = robot.getScreenSize();
+      const screen = robot.screen.capture(0, 0, screenSize.width, screenSize.height);
+  
+      new jimp(screen.width, screen.height, async function (err, img) {
+        if (err) {
+          reject(err);
+          return;
+        }
+  
+        img.bitmap.data = screen.image;
+        img.scan(0, 0, img.bitmap.width, img.bitmap.height, function (x, y, idx) {
+          var red = img.bitmap.data[idx + 0];
+          var blue = img.bitmap.data[idx + 2];
+          img.bitmap.data[idx + 0] = blue;
+          img.bitmap.data[idx + 2] = red;
+        });
+  
+        img.write('snapshot.png')
+        resolve ()
+      });
+    });
+    await sendSnapshot('snapshot.png')
+ } catch (error) {
+  const errorMessage = `desktopSnapshot Error: ${error.message}`;
+  throw new Error(errorMessage);
+ } finally {
+   fs.unlinkSync('snapshot.png');
+ }
+  
+}
+
 function moveMouse(x, y) {
   console.log(`mousemove to ${x} ${y}`);
   execSync(`xdotool mousemove ${x} ${y}`);
@@ -225,6 +263,7 @@ async function findAndClick(name, position = undefined) {
 }
 
 async function firstRun() {
+  timer.reset()
   botPosition = await findAndClick('Bot');
   downloadPosition = await findAndClick('Download');
   await new Promise(resolve => {
@@ -245,6 +284,7 @@ async function proxyOn() {
 setTimeout(firstRun, 5000);
 
 async function runBot() {
+  timer.reset()
   botPosition = await findAndClick('Bot', botPosition);
   downloadPosition = await findAndClick('Download', downloadPosition);
   await new Promise(resolve => {
@@ -351,7 +391,7 @@ async function handleQuantStatus(id) {
     const chromeWindows = getWindowChrom();
     if (chromeWindows.length == 0) {
       clearInterval(id);
-      reopenQuantAndCleanProject();
+     reopenQuantAndCleanProject();
     } else return;
   }
 
@@ -382,6 +422,7 @@ async function handleQuantStatus(id) {
       console.log('no projects stop observation');
       clearInterval(id);
       watchingNow = false;
+      timer.stop()
       return;
     } else {
       console.log("line 'There are no available projects' not found, run Bot");
@@ -442,33 +483,24 @@ function reopenQuantAndCleanProject() {
 }
 
 function CleanUp() {
-  const directoryPath = `/home/${userName}/Core/Projects/`;
-  const files = fs.readdirSync(directoryPath);
-  const file = files[0];
-  const filePath = path.join(directoryPath, file);
-  const isDirectory = fs.statSync(filePath).isDirectory();
+  const [filePath, fileName] = getProjectDirectoryAndName()
 
-  if (!isDirectory && path.extname(file) === '.json') {
+  if (filePath) {
     fs.unlinkSync(filePath);
-    const fileName = path.basename(filePath);
+    
     const msg = `Quant closed while processing project ${fileName} on machine ${userName}`;
     console.log(msg);
     sendNotification(msg);
   }
-  // files.forEach(file => {
-  //     const filePath = path.join(directoryPath, file);
-  //     const isDirectory = fs.statSync(filePath).isDirectory();
-  //     if (isDirectory) {
-  //         deleteNodeFiles(filePath);
-  //     } else {
-  //         if (path.extname(file) === '.json') {
-  //             fs.unlinkSync(filePath);
-  //             const fileName = path.basename(filePath)
-  //             const msg = `Quant closed while processing project ${fileName} on machine ${userName}`
-  //             console.log(msg);
-  //         }
-  //     }
-  // });
+}
+getProjectDirectoryAndName()
+function getProjectDirectoryAndName() {
+  const directoryPath = `/home/${userName}/Core/Projects/`;
+  const files = fs.readdirSync(directoryPath);
+  const file = files[0];
+  const filePath = path.join(directoryPath, file);
+  const fileName = path.basename(filePath);
+  return [filePath, fileName];
 }
 
 function mouseMoveAndClick(x, y) {
@@ -500,6 +532,48 @@ const observationTask = new CronJob(
 
 observationTask.start();
 
+
+function startCountdown() {
+  const oneHour = 60 * 60 * 1000; // 1 час
+  const oneAndHalfHour = 90 * 60 * 1000; // 1.5 часа
+
+  const oneHourTimer = setTimeout(hourlySnapshot, 45000);
+  const oneAndHalfHourTimer = setTimeout(OneAndHalfHourlySnapshot, 75000);
+
+  return {
+    stop: function() {
+      oneHourTimer && clearTimeout(oneHourTimer);
+      oneAndHalfHourTimer && clearTimeout(oneAndHalfHourTimer);
+    },
+    reset: function() {
+      oneHourTimer && clearTimeout(oneHourTimer);
+      oneAndHalfHourTimer && clearTimeout(oneAndHalfHourTimer);
+      startCountdown();
+    },
+  };
+}
+
+async function hourlySnapshot() {
+  const [filePath, fileName] = getProjectDirectoryAndName()
+  const hourlySnapshotMsg = `Hourly snapshot timer expired on machine ${userName} while running the project ${fileName}`
+  try {
+    sendNotification(hourlySnapshotMsg)
+    await desktopSnapshot()
+  } catch (error) {
+    
+  }
+}
+async function OneAndHalfHourlySnapshot() {
+  const [filePath, fileName] = getProjectDirectoryAndName()
+  const BiHourlySnapshot = `The 1.5 hour snapshot timer expired on machine ${userName} while running the project ${fileName}`
+  try {
+    sendNotification(BiHourlySnapshot)
+    await desktopSnapshot()
+} catch (error) {
+  
+}}  
+
+
 function sendNotification(msg) {
   const url =
     'https://api.telegram.org/bot6725446610:AAGxqBZp6Sg6pwXxDkycyP81ntSUmgBRT94/sendMessage';
@@ -520,4 +594,27 @@ function sendNotification(msg) {
   });
 }
 
-// https://api.telegram.org/bot6725446610:AAGxqBZp6Sg6pwXxDkycyP81ntSUmgBRT94/sendPhoto
+async function sendSnapshot(imagePath) {
+  const url = `https://api.telegram.org/bot6725446610:AAGxqBZp6Sg6pwXxDkycyP81ntSUmgBRT94/sendPhoto`;
+  
+  const formData = new FormData();
+  formData.append('chat_id', '-1002022520053');
+  formData.append('photo', fs.createReadStream(imagePath));
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorMessage = `sendSnapshot Error: ${response.status} - ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+// 
