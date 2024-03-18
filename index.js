@@ -25,6 +25,8 @@ let botPosition;
 let downloadPosition;
 let runPosition;
 let cycle = 0;
+let oneHourTimer
+let oneAndHalfHourTimer
 
 const userName = process.env.USERNAME || process.env.USER;
 const timer = startCountdown();
@@ -532,8 +534,7 @@ const observationTask = new CronJob(
 
 observationTask.start();
 
-let oneHourTimer
-let oneAndHalfHourTimer
+
 function startCountdown() {
   const oneHour = 60 * 60 * 1000; // 1 час
   const oneAndHalfHour = 90 * 60 * 1000; // 1.5 часа
