@@ -532,22 +532,28 @@ const observationTask = new CronJob(
 
 observationTask.start();
 
-
+let oneHourTimer
+let oneAndHalfHourTimer
 function startCountdown() {
   const oneHour = 60 * 60 * 1000; // 1 час
   const oneAndHalfHour = 90 * 60 * 1000; // 1.5 часа
 
-  const oneHourTimer = setTimeout(hourlySnapshot, 45000);
-  const oneAndHalfHourTimer = setTimeout(OneAndHalfHourlySnapshot, 75000);
+  
+   oneHourTimer = !oneHourTimer && setTimeout(hourlySnapshot, oneHour);
+   oneAndHalfHourTimer = !oneAndHalfHourTimer && setTimeout(OneAndHalfHourlySnapshot, oneAndHalfHour);
 
   return {
     stop: function() {
       oneHourTimer && clearTimeout(oneHourTimer);
       oneAndHalfHourTimer && clearTimeout(oneAndHalfHourTimer);
+      oneHourTimer = null
+      oneAndHalfHourTimer = null
     },
     reset: function() {
       oneHourTimer && clearTimeout(oneHourTimer);
       oneAndHalfHourTimer && clearTimeout(oneAndHalfHourTimer);
+      oneHourTimer = null
+      oneAndHalfHourTimer = null
       startCountdown();
     },
   };
