@@ -493,7 +493,7 @@ function CleanUp() {
     sendNotification(msg);
   }
 }
-getProjectDirectoryAndName()
+
 function getProjectDirectoryAndName() {
   const directoryPath = `/home/${userName}/Core/Projects/`;
   const files = fs.readdirSync(directoryPath);
