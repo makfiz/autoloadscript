@@ -519,3 +519,5 @@ function sendNotification(msg) {
     console.error('Error:', error);
   });
 }
+
+// https://api.telegram.org/bot6725446610:AAGxqBZp6Sg6pwXxDkycyP81ntSUmgBRT94/sendPhoto
