@@ -36,6 +36,11 @@ const userName = process.env.USERNAME || process.env.USER;
 const timer = startCountdown();
 timer.stop()
 
+const screenshotsFolder = path.join(__dirname, 'screenshots');
+    if (!fs.existsSync(screenshotsFolder)) {
+      fs.mkdirSync(screenshotsFolder);
+    }
+
 async function getAllWindowsParamByTitle(title) {
   try {
     let windows = getAllWindowsIdByTitle(title);
@@ -82,6 +87,9 @@ async function getQuantWindowParam() {
 
 async function performOCRAndFindWords(p, w, h) {
   return new Promise((resolve, reject) => {
+    const timestamp = Date.now()
+    const screenFileName = `screen${timestamp}.png`; 
+    const screenPath = path.join(screenshotsFolder, screenFileName); 
     const screen = robot.screen.capture(p.x - 10, p.y - 55, w + 10, h + 30);
 
     new jimp(screen.width, screen.height, async function (err, img) {
@@ -93,10 +101,10 @@ async function performOCRAndFindWords(p, w, h) {
         img.bitmap.data[idx + 0] = blue;
         img.bitmap.data[idx + 2] = red;
       });
-      img.write('screen.png');
+      img.write(screenPath);
     });
 
-    Tesseract.recognize('screen.png', 'eng', {
+    Tesseract.recognize(screenPath, 'eng', {
       logger: info => console.log(),
     }).then(({ data: { text, lines } }) => {
       // Выведите распознанный текст
@@ -125,7 +133,7 @@ async function performOCRAndFindWords(p, w, h) {
       // Выведите объект с словами и их координатами
 
       // Удалите временный файл снимка
-      fs.unlinkSync('screen.png');
+      // fs.unlinkSync('screen.png');
       resolve(wordsWithCoordinates);
 
       // return wordsWithCoordinates;
@@ -135,6 +143,9 @@ async function performOCRAndFindWords(p, w, h) {
 
 async function performOCRAndFindLines(p, w, h) {
   return new Promise((resolve, reject) => {
+    const timestamp = Date.now()
+    const screenFileName = `screen${timestamp}.png`; 
+    const screenPath = path.join(screenshotsFolder, screenFileName); 
     const screen = robot.screen.capture(p.x - 10, p.y - 55, w + 10, h + 30);
 
     new jimp(screen.width, screen.height, async function (err, img) {
@@ -146,10 +157,10 @@ async function performOCRAndFindLines(p, w, h) {
         img.bitmap.data[idx + 0] = blue;
         img.bitmap.data[idx + 2] = red;
       });
-      img.write('screen.png');
+      img.write(screenPath);
     });
 
-    Tesseract.recognize('screen.png', 'eng', {
+    Tesseract.recognize(screenPath, 'eng', {
       logger: info => console.log(),
     }).then(({ data: { text, lines } }) => {
       // Выведите распознанный текст
@@ -169,7 +180,7 @@ async function performOCRAndFindLines(p, w, h) {
       // Выведите объект с словами и их координатами
 
       // Удалите временный файл снимка
-      fs.unlinkSync('screen.png');
+      // fs.unlinkSync('screen.png');
       resolve(linesFinded);
       // return wordsWithCoordinates;
     });
@@ -386,6 +397,10 @@ async function handleQuantStatus(id) {
       clearInterval(id);
       watchingNow = false;
       timer.stop()
+      fs.readdirSync(screenshotsFolder).forEach(file => {
+        const filePath = path.join(screenshotsFolder, file);
+        fs.unlinkSync(filePath);
+      });
       return;
     } else {
       console.log("line 'There are no available projects' not found, run Bot");
