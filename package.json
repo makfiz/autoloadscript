@@ -18,6 +18,7 @@
     "robotjs": "^0.6.0",
     "string-similarity": "^4.0.4",
     "tesseract.js": "^5.0.4",
+    "ws": "^8.16.0",
     "x11": "^2.3.0"
   },
   "devDependencies": {

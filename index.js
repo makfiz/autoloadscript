@@ -1,9 +1,10 @@
 const { execSync, exec, spawn } = require('child_process');
 const { CronJob } = require('cron');
 const stringSimilarity = require('string-similarity');
+const {initWebSocketConnection} = require('./websocket');
 const robot = require('robotjs');
 const fs = require('fs');
-const FormData = require('form-data');
+// const FormData = require('form-data');
 const fetch = require('node-fetch');
 const path = require('path');
 require('./node_modules/robotjs/build/Release/robotjs.node');
@@ -15,6 +16,9 @@ const {
   getAllWindowsIdByTitle,
   getWindowChrom,
 } = require('./quant');
+
+const {desktopSnapshot} = require('./snapshot');
+const { TGTOKEN } = require('./config');
 
 let windowPosition;
 let width;
@@ -75,21 +79,6 @@ async function getQuantWindowParam() {
   }
 }
 
-// async function getQuantWindowParam() {
-//   const title = 'Quant';
-//   try {
-//     const { id, width: newWidth, height: newHeight } = findLargestWindow(title);
-//     const newPosition = getWindowPositionById(id);
-//     windowPosition = newPosition;
-//     width = newWidth;
-//     height = newHeight;
-//   } catch (error) {
-//     console.error('Произошла ошибка:', error);
-//     throw error;
-//   }
-// }
-
-getQuantWindowParam();
 
 async function performOCRAndFindWords(p, w, h) {
   return new Promise((resolve, reject) => {
@@ -187,39 +176,7 @@ async function performOCRAndFindLines(p, w, h) {
   });
 }
 
- async function desktopSnapshot() {
-  try {
-    await new Promise((resolve, reject) => {
-      const screenSize = robot.getScreenSize();
-      const screen = robot.screen.capture(0, 0, screenSize.width, screenSize.height);
-  
-      new jimp(screen.width, screen.height, async function (err, img) {
-        if (err) {
-          reject(err);
-          return;
-        }
-  
-        img.bitmap.data = screen.image;
-        img.scan(0, 0, img.bitmap.width, img.bitmap.height, function (x, y, idx) {
-          var red = img.bitmap.data[idx + 0];
-          var blue = img.bitmap.data[idx + 2];
-          img.bitmap.data[idx + 0] = blue;
-          img.bitmap.data[idx + 2] = red;
-        });
-  
-        img.write('snapshot.png')
-        resolve ()
-      });
-    });
-    await sendSnapshot('snapshot.png')
- } catch (error) {
-  const errorMessage = `desktopSnapshot Error: ${error.message}`;
-  throw new Error(errorMessage);
- } finally {
-   fs.unlinkSync('snapshot.png');
- }
-  
-}
+
 
 function moveMouse(x, y) {
   console.log(`mousemove to ${x} ${y}`);
@@ -283,7 +240,7 @@ async function proxyOn() {
   await findAndClick('Test');
 }
 
-setTimeout(firstRun, 5000);
+// setTimeout(firstRun, 5000);
 
 async function runBot() {
   timer.reset()
@@ -298,10 +255,11 @@ async function runBot() {
   });
 }
 
-startObservation();
+// startObservation()
 function startObservation() {
   console.log('started observation');
   watchingNow = true;
+  initWebSocketConnection(userName)
   intrId = setInterval(() => {
     handleQuantStatus(intrId);
   }, 45000);
@@ -390,11 +348,14 @@ async function handleQuantStatus(id) {
         windowPosition.y - 50 + 100
       );
     });
-    const chromeWindows = getWindowChrom();
+    if (internetConnection) {
+      const chromeWindows = getWindowChrom();
     if (chromeWindows.length == 0) {
       clearInterval(id);
      reopenQuantAndCleanProject();
     } else return;
+    }
+    
   }
 
   if (interruptProcess) {
@@ -439,17 +400,28 @@ async function handleQuantStatus(id) {
 }
 
 function reopenQuant() {
-  execSync(`killall Quant`);
-  const terminalTitle = 'TerminalLogs';
-  const process = spawn('xterm', ['-T', terminalTitle, '-e', '~/Quant/Quant'], {
-    detached: true,
-    stdio: 'ignore',
-  });
+  try {
+    execSync('killall Quant');
+} catch (error) {
+  if (error.status === 1) {
+    console.log('');
+}
+}
 
-  process.unref();
+  const terminalTitle = 'TerminalLogs';
+
+  const xtermProcess = spawn('xterm', ['-T', terminalTitle, '-e', '~/Quant/Quant'], {
+    detached: true,
+    stdio: ['ignore']
+  });
+  
+  xtermProcess.unref();
+
+
   setTimeout(async () => {
     try {
       await getQuantWindowParam();
+      startObservation();
       setTimeout(async () => {
         await proxyOn();
         await firstRun();
@@ -473,6 +445,7 @@ function reopenQuantAndCleanProject() {
   setTimeout(async () => {
     try {
       await getQuantWindowParam();
+      
       CleanUp();
       setTimeout(async () => {
         await firstRun();
@@ -500,6 +473,7 @@ function getProjectDirectoryAndName() {
   const directoryPath = `/home/${userName}/Core/Projects/`;
   const files = fs.readdirSync(directoryPath);
   const file = files[0];
+  if (!file) return [null, null]
   const filePath = path.join(directoryPath, file);
   const fileName = path.basename(filePath);
   return [filePath, fileName];
@@ -538,7 +512,6 @@ observationTask.start();
 function startCountdown() {
   const oneHour = 60 * 60 * 1000; // 1 час
   const oneAndHalfHour = 90 * 60 * 1000; // 1.5 часа
-
   
    oneHourTimer = !oneHourTimer && setTimeout(hourlySnapshot, oneHour);
    oneAndHalfHourTimer = !oneAndHalfHourTimer && setTimeout(OneAndHalfHourlySnapshot, oneAndHalfHour);
@@ -583,7 +556,7 @@ async function OneAndHalfHourlySnapshot() {
 
 function sendNotification(msg) {
   const url =
-    'https://api.telegram.org/bot6725446610:AAGxqBZp6Sg6pwXxDkycyP81ntSUmgBRT94/sendMessage';
+    `https://api.telegram.org/bot${TGTOKEN}/sendMessage`;
   const data = {
     chat_id: '-1002022520053',
     parse_mode: 'HTML',
@@ -601,27 +574,7 @@ function sendNotification(msg) {
   });
 }
 
-async function sendSnapshot(imagePath) {
-  const url = `https://api.telegram.org/bot6725446610:AAGxqBZp6Sg6pwXxDkycyP81ntSUmgBRT94/sendPhoto`;
-  
-  const formData = new FormData();
-  formData.append('chat_id', '-1002022520053');
-  formData.append('photo', fs.createReadStream(imagePath));
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      const errorMessage = `sendSnapshot Error: ${response.status} - ${response.statusText}`;
-      throw new Error(errorMessage);
-    }
-
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-
-// 
+(function init () {
+  reopenQuant()
+})()
