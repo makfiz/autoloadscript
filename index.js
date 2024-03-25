@@ -36,10 +36,10 @@ const userName = process.env.USERNAME || process.env.USER;
 const timer = startCountdown();
 timer.stop()
 
-const screenshotsFolder = path.join(__dirname, 'screenshots');
-    if (!fs.existsSync(screenshotsFolder)) {
-      fs.mkdirSync(screenshotsFolder);
-    }
+const screenshotsFolder = 'screenshots';
+if (!fs.existsSync(screenshotsFolder)) {
+  fs.mkdirSync(screenshotsFolder);
+}
 
 async function getAllWindowsParamByTitle(title) {
   try {
