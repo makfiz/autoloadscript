@@ -11,6 +11,11 @@ async function initWebSocketConnection (userName) {
   ws.on('open', function open() {
     ws.send(`wsName:${userName}`);
   });
+
+  ws.on('close', function close() {
+    console.log('WebSocket connection closed');
+    setTimeout(()=>{initWebSocketConnection(userName)}, 5000);
+  });
   
   ws.on('message', function message(data) {
     const msg = data.toString()
