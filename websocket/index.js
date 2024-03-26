@@ -3,7 +3,7 @@ const {desktopSnapshot} = require('../snapshot');
 
 const { baseAPIUrl } = require('../config');
 
-function initWebSocketConnection (userName) {
+async function initWebSocketConnection (userName) {
     const ws = new WebSocket(`${baseAPIUrl}/ws`); // Замените localhost на ваш домен или IP-адрес сервера
   
   ws.on('error', console.error);

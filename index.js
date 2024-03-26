@@ -133,7 +133,7 @@ async function performOCRAndFindWords(p, w, h) {
       // Выведите объект с словами и их координатами
 
       // Удалите временный файл снимка
-      // fs.unlinkSync('screen.png');
+      fs.unlinkSync(screenPath);
       resolve(wordsWithCoordinates);
 
       // return wordsWithCoordinates;
@@ -180,7 +180,7 @@ async function performOCRAndFindLines(p, w, h) {
       // Выведите объект с словами и их координатами
 
       // Удалите временный файл снимка
-      // fs.unlinkSync('screen.png');
+      fs.unlinkSync(screenPath);
       resolve(linesFinded);
       // return wordsWithCoordinates;
     });
@@ -270,7 +270,6 @@ async function runBot() {
 function startObservation() {
   console.log('started observation');
   watchingNow = true;
-  initWebSocketConnection(userName)
   intrId = setInterval(() => {
     handleQuantStatus(intrId);
   }, 45000);
@@ -397,10 +396,10 @@ async function handleQuantStatus(id) {
       clearInterval(id);
       watchingNow = false;
       timer.stop()
-      fs.readdirSync(screenshotsFolder).forEach(file => {
-        const filePath = path.join(screenshotsFolder, file);
-        fs.unlinkSync(filePath);
-      });
+      // fs.readdirSync(screenshotsFolder).forEach(file => {
+      //   const filePath = path.join(screenshotsFolder, file);
+      //   fs.unlinkSync(filePath);
+      // });
       return;
     } else {
       console.log("line 'There are no available projects' not found, run Bot");
@@ -436,7 +435,6 @@ function reopenQuant() {
   setTimeout(async () => {
     try {
       await getQuantWindowParam();
-      startObservation();
       setTimeout(async () => {
         await proxyOn();
         await firstRun();
@@ -502,12 +500,12 @@ function mouseMoveAndClick(x, y) {
       setTimeout(() => {
         resolve([x, y]);
       }, 1500);
-    }, 500);
+    }, 1000);
   });
 }
 
 const observationTask = new CronJob(
-  '20 7,8,9,10,11,13,15,17,19,21 * * 1-5',
+  '00,20,40 7-21 * * 1-5',
   async () => {
     if (!watchingNow) {
       watchingNow = true;
@@ -591,5 +589,6 @@ function sendNotification(msg) {
 
 
 (function init () {
+  initWebSocketConnection(userName)
   reopenQuant()
 })()
